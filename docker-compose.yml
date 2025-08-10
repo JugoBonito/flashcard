@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  flashcard-pro:
+    image: ghcr.io/jugobonito/flashcard:latest
+    container_name: flashcard-pro
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - TZ=Europe/Vienna
+    networks:
+      - npm_network
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  npm_network:
+    external: true
