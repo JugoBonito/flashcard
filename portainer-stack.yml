@@ -2,31 +2,43 @@ version: '3.8'
 
 services:
   flashcard-pro:
-    image: ghcr.io/jugobonito/flashcard:latest
+    image: node:20-alpine
     container_name: flashcard-pro
     restart: unless-stopped
+    working_dir: /app
     environment:
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
       - PORT=3000
       - HOSTNAME=0.0.0.0
       - TZ=Europe/Vienna
-    networks:
-      - npm_network
+    network_mode: bridge
     ports:
       - "3000:3000"
+    command: |
+      sh -c "
+        echo '🚀 FlashCard Pro - Final Deployment...' &&
+        apk add --no-cache git &&
+        rm -rf /app/* /app/.* 2>/dev/null || true &&
+        git clone https://github.com/JugoBonito/flashcard.git /tmp/app &&
+        cp -r /tmp/app/* /app/ &&
+        cp -r /tmp/app/.[^.]* /app/ 2>/dev/null || true &&
+        rm -rf /tmp/app &&
+        cd /app &&
+        echo '📦 Installing ALL dependencies...' &&
+        NODE_ENV=development npm install &&
+        echo '🏗️  Building application...' &&
+        NODE_ENV=production npm run build &&
+        echo '📁 Copying static files for CSS serving...' &&
+        cp -r /app/.next/static /app/.next/standalone/.next/ &&
+        cp -r /app/public /app/.next/standalone/ &&
+        echo '✅ Starting FlashCard Pro with styling...' &&
+        cd /app/.next/standalone &&
+        node server.js
+      "
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
-      - "org.label-schema.name=FlashCard Pro"
-      - "org.label-schema.description=Modern flashcard app with spaced repetition"
-      - "org.label-schema.url=https://github.com/JugoBonito/flashcard"
-
-networks:
-  npm_network:
-    external: true
+      start_period: 300s
