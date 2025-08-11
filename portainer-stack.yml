@@ -17,7 +17,7 @@ services:
       - "3000:3000"
     command: |
       sh -c "
-        echo '🚀 FlashCard Pro - Final Deployment...' &&
+        echo '🚀 FlashCard Pro - CSS Fix Deployment...' &&
         apk add --no-cache git &&
         rm -rf /app/* /app/.* 2>/dev/null || true &&
         git clone https://github.com/JugoBonito/flashcard.git /tmp/app &&
@@ -25,11 +25,17 @@ services:
         cp -r /tmp/app/.[^.]* /app/ 2>/dev/null || true &&
         rm -rf /tmp/app &&
         cd /app &&
-        echo '📦 Installing ALL dependencies...' &&
+        echo '📦 Installing ALL dependencies including dev dependencies...' &&
         NODE_ENV=development npm install &&
-        echo '🏗️  Skipping build and using dev server for proper CSS...' &&
+        echo '🔧 Installing TypeScript explicitly...' &&
+        npm install typescript @types/node @types/react @types/react-dom --save-dev &&
+        echo '🎨 Building CSS and static files...' &&
+        NODE_ENV=production npm run build &&
+        echo '📁 Copying static files to serve...' &&
+        mkdir -p /app/public/static &&
+        cp -r .next/static/* /app/public/static/ 2>/dev/null || true &&
         echo '✅ Starting FlashCard Pro with CSS support...' &&
-        npm run dev
+        npm start
       "
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1"]
